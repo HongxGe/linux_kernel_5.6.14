@@ -561,11 +561,22 @@ ifdef config-build
 include arch/$(SRCARCH)/Makefile
 export KBUILD_DEFCONFIG KBUILD_KCONFIG CC_VERSION_TEXT
 
+# build := -f $(srctree)/scripts/Makefile.build obj
+# 	$(srctree)内核目录源码
+# $(MAKE) make命令
+# %(Q) 控制静默输出与否（Q=@ 时隐藏命令，Q= 时显示命令）
+# 调用子目录的make脚本，并且传递obj参数
 config: outputmakefile scripts_basic FORCE
 	$(Q)$(MAKE) $(build)=scripts/kconfig $@
 
+# %config用通配符进行目标匹配->menuconfig,xconfig...
+# outputmakefile scripts_basic FORCE依赖三个伪目标。
+# scripts_basic 编译 scripts/basic/ 下的工具（如 fixdep）
+# FORCE 强制重新执行
+
 %config: outputmakefile scripts_basic FORCE
 	$(Q)$(MAKE) $(build)=scripts/kconfig $@
+# 展开make -f ./scripts/Makefile.build obj=scripts/kconfig menuconfig
 
 else #!config-build
 # ===========================================================================
@@ -659,6 +670,9 @@ ifdef may-sync-config
 # because some architectures define CROSS_COMPILE there.
 include include/config/auto.conf.cmd
 
+# 如果KCONFIG_CONFIG，.config文件不存在，就执行命令
+# @ 表示不显示命令本身只显示输出
+# 目的：告诉开发者你还没有配置，请先配置
 $(KCONFIG_CONFIG):
 	@echo >&2 '***'
 	@echo >&2 '*** Configuration file "$@" not found!'
