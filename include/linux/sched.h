@@ -626,6 +626,7 @@ struct wake_q_node {
 	struct wake_q_node *next;
 };
 
+/* 进程描述符 */
 struct task_struct {
 #ifdef CONFIG_THREAD_INFO_IN_TASK
 	/*
@@ -643,7 +644,7 @@ struct task_struct {
 	 */
 	randomized_struct_fields_start
 
-	void				*stack;
+	void				*stack;	// 指向内核栈
 	refcount_t			usage;
 	/* Per task flags (PF_*), defined further below: */
 	unsigned int			flags;
@@ -671,7 +672,7 @@ struct task_struct {
 	int				wake_cpu;
 #endif
 	int				on_rq;
-
+	/* 下面为进程调度策略和优先级*/
 	int				prio;
 	int				static_prio;
 	int				normal_prio;
@@ -703,7 +704,7 @@ struct task_struct {
 
 	unsigned int			policy;
 	int				nr_cpus_allowed;
-	const cpumask_t			*cpus_ptr;
+	const cpumask_t			*cpus_ptr;	// 该成员：允许进程在哪个CPU上运行
 	cpumask_t			cpus_mask;
 
 #ifdef CONFIG_PREEMPT_RCU
@@ -729,6 +730,8 @@ struct task_struct {
 	struct rb_node			pushable_dl_tasks;
 #endif
 
+	// 这两个指针指向内存描述符。 进程：mm和active_mm指向同一个内存描述符。内核线程：mm是空指针
+	// 当内核线程运行时，active_mm指向从进程借用的内存描述符
 	struct mm_struct		*mm;
 	struct mm_struct		*active_mm;
 
@@ -790,8 +793,8 @@ struct task_struct {
 
 	struct restart_block		restart_block;
 
-	pid_t				pid;
-	pid_t				tgid;
+	pid_t				pid;	// 全局的进程号
+	pid_t				tgid;	// 全局的线程组标识符
 
 #ifdef CONFIG_STACKPROTECTOR
 	/* Canary value for the -fstack-protector GCC feature: */
@@ -804,17 +807,17 @@ struct task_struct {
 	 */
 
 	/* Real parent process: */
-	struct task_struct __rcu	*real_parent;
+	struct task_struct __rcu	*real_parent;	// 指向真实的父进程
 
 	/* Recipient of SIGCHLD, wait4() reports: */
-	struct task_struct __rcu	*parent;
+	struct task_struct __rcu	*parent;		// 指向父进程 跟踪进程或者真实的父进程
 
 	/*
 	 * Children/sibling form the list of natural children:
 	 */
 	struct list_head		children;
 	struct list_head		sibling;
-	struct task_struct		*group_leader;
+	struct task_struct		*group_leader;		// 指向线程组的组长
 
 	/*
 	 * 'ptraced' is the list of tasks this task is using ptrace() on.
@@ -827,7 +830,7 @@ struct task_struct {
 
 	/* PID/PID hash table linkage. */
 	struct pid			*thread_pid;
-	struct hlist_node		pid_links[PIDTYPE_MAX];
+	struct hlist_node		pid_links[PIDTYPE_MAX];		// 进程号 进程组标识符和会话标识符
 	struct list_head		thread_group;
 	struct list_head		thread_node;
 
@@ -877,10 +880,10 @@ struct task_struct {
 	const struct cred __rcu		*ptracer_cred;
 
 	/* Objective and real subjective task credentials (COW): */
-	const struct cred __rcu		*real_cred;
+	const struct cred __rcu		*real_cred;		// 指向主体和真实客体的证书
 
 	/* Effective (overridable) subjective task credentials (COW): */
-	const struct cred __rcu		*cred;
+	const struct cred __rcu		*cred;			// 指向有效客体的证书
 
 #ifdef CONFIG_KEYS
 	/* Cached requested key. */
@@ -894,10 +897,11 @@ struct task_struct {
 	 * - access it with [gs]et_task_comm()
 	 * - lock it with task_lock()
 	 */
-	char				comm[TASK_COMM_LEN];
+	char				comm[TASK_COMM_LEN];	// 存储应用层 进程名称
 
 	struct nameidata		*nameidata;
 
+	/* 以下两个用于Unix系统的信号量和共享内存 */
 #ifdef CONFIG_SYSVIPC
 	struct sysv_sem			sysvsem;
 	struct sysv_shm			sysvshm;
@@ -907,13 +911,15 @@ struct task_struct {
 	unsigned long			last_switch_time;
 #endif
 	/* Filesystem information: */
-	struct fs_struct		*fs;
+	struct fs_struct		*fs;		// 文件系统信息，主要是进程的根目录和当前的工作目录
 
 	/* Open file information: */
-	struct files_struct		*files;
+	struct files_struct		*files;		// 打开的文件列表
 
 	/* Namespaces: */
-	struct nsproxy			*nsproxy;
+	struct nsproxy			*nsproxy;	// 命名空间
+
+	/* 下面这块主要用于信号处理 */
 
 	/* Signal handlers: */
 	struct signal_struct		*signal;
